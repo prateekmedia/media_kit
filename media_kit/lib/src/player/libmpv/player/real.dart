@@ -136,7 +136,7 @@ class libmpvPlayer extends PlatformPlayer {
       await waitForVideoControllerInitializationIfAttached;
 
       final int index;
-      final playlist = <Media>[];
+      final List<Media> playlist = <Media>[];
       if (playable is Media) {
         index = 0;
         playlist.add(playable);
@@ -569,6 +569,13 @@ class libmpvPlayer extends PlatformPlayer {
         args.cast(),
       );
       calloc.free(args);
+
+      // It is self explanatory that PlayerState.completed & PlayerStreams.completed must enter the false state if seek is called. Typically after EOF.
+      // https://github.com/alexmercerind/media_kit/issues/221
+      state = state.copyWith(completed: false);
+      if (!completedController.isClosed) {
+        completedController.add(false);
+      }
     }
 
     if (synchronized) {
@@ -883,10 +890,9 @@ class libmpvPlayer extends PlatformPlayer {
 
       final name = 'audio-device'.toNativeUtf8();
       final value = audioDevice.name.toNativeUtf8();
-      mpv.mpv_set_property(
+      mpv.mpv_set_property_string(
         ctx,
         name.cast(),
-        generated.mpv_format.MPV_FORMAT_STRING,
         value.cast(),
       );
       calloc.free(name);
@@ -1059,6 +1065,73 @@ class libmpvPlayer extends PlatformPlayer {
   }
 
   Future<void> _handler(Pointer<generated.mpv_event> event) async {
+    if (event.ref.event_id ==
+        generated.mpv_event_id.MPV_EVENT_PROPERTY_CHANGE) {
+      final prop = event.ref.data.cast<generated.mpv_event_property>();
+      if (prop.ref.name.cast<Utf8>().toDartString() == 'idle-active' &&
+          prop.ref.format == generated.mpv_format.MPV_FORMAT_FLAG) {
+        // The [Player] has entered the idle state; initialization is complete.
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }
+      // Following properties are unrelated to the playback lifecycle. Thus, these can be accessed before initialization is complete.
+      // e.g. audio-device & audio-device-list seem to be emitted before idle-active.
+      if (prop.ref.name.cast<Utf8>().toDartString() == 'audio-device' &&
+          prop.ref.format == generated.mpv_format.MPV_FORMAT_NODE) {
+        final value = prop.ref.data.cast<generated.mpv_node>();
+        if (value.ref.format == generated.mpv_format.MPV_FORMAT_STRING) {
+          final name = value.ref.u.string.cast<Utf8>().toDartString();
+          final audioDevice = AudioDevice(name, '');
+          state = state.copyWith(audioDevice: audioDevice);
+          if (!audioDeviceController.isClosed) {
+            audioDeviceController.add(audioDevice);
+          }
+        }
+      }
+      if (prop.ref.name.cast<Utf8>().toDartString() == 'audio-device-list' &&
+          prop.ref.format == generated.mpv_format.MPV_FORMAT_NODE) {
+        final value = prop.ref.data.cast<generated.mpv_node>();
+        final audioDevices = <AudioDevice>[];
+        if (value.ref.format == generated.mpv_format.MPV_FORMAT_NODE_ARRAY) {
+          final list = value.ref.u.list.ref;
+          for (int i = 0; i < list.num; i++) {
+            if (list.values[i].format ==
+                generated.mpv_format.MPV_FORMAT_NODE_MAP) {
+              String name = '', description = '';
+              final device = list.values[i].u.list.ref;
+              for (int j = 0; j < device.num; j++) {
+                if (device.values[j].format ==
+                    generated.mpv_format.MPV_FORMAT_STRING) {
+                  final property = device.keys[j].cast<Utf8>().toDartString();
+                  final value =
+                      device.values[j].u.string.cast<Utf8>().toDartString();
+                  switch (property) {
+                    case 'name':
+                      name = value;
+                      break;
+                    case 'description':
+                      description = value;
+                      break;
+                  }
+                }
+              }
+              audioDevices.add(AudioDevice(name, description));
+            }
+          }
+          state = state.copyWith(audioDevices: audioDevices);
+          if (!audioDevicesController.isClosed) {
+            audioDevicesController.add(audioDevices);
+          }
+        }
+      }
+    }
+
+    if (!completer.isCompleted) {
+      // Ignore the events which are fired before the initialization.
+      return;
+    }
+
     _error(event.ref.error);
 
     if (event.ref.event_id == generated.mpv_event_id.MPV_EVENT_START_FILE) {
@@ -1195,19 +1268,21 @@ class libmpvPlayer extends PlatformPlayer {
             }
           }
         }
-        state = state.copyWith(
-          playlist: Playlist(
-            playlist,
-            index: index,
-          ),
-        );
-        if (!playlistController.isClosed) {
-          playlistController.add(
-            Playlist(
+        if (index >= 0) {
+          state = state.copyWith(
+            playlist: Playlist(
               playlist,
               index: index,
             ),
           );
+          if (!playlistController.isClosed) {
+            playlistController.add(
+              Playlist(
+                playlist,
+                index: index,
+              ),
+            );
+          }
         }
       }
       if (prop.ref.name.cast<Utf8>().toDartString() == 'volume' &&
@@ -1298,54 +1373,6 @@ class libmpvPlayer extends PlatformPlayer {
           if (!audioBitrateController.isClosed) {
             audioBitrateController.add(null);
             state = state.copyWith(audioBitrate: null);
-          }
-        }
-      }
-      if (prop.ref.name.cast<Utf8>().toDartString() == 'audio-device' &&
-          prop.ref.format == generated.mpv_format.MPV_FORMAT_NODE) {
-        final value = prop.ref.data.cast<generated.mpv_node>();
-        if (value.ref.format == generated.mpv_format.MPV_FORMAT_STRING) {
-          final name = value.ref.u.string.cast<Utf8>().toDartString();
-          final audioDevice = AudioDevice(name, '');
-          state = state.copyWith(audioDevice: audioDevice);
-          if (!audioDeviceController.isClosed) {
-            audioDeviceController.add(audioDevice);
-          }
-        }
-      }
-      if (prop.ref.name.cast<Utf8>().toDartString() == 'audio-device-list' &&
-          prop.ref.format == generated.mpv_format.MPV_FORMAT_NODE) {
-        final value = prop.ref.data.cast<generated.mpv_node>();
-        final audioDevices = <AudioDevice>[];
-        if (value.ref.format == generated.mpv_format.MPV_FORMAT_NODE_ARRAY) {
-          final list = value.ref.u.list.ref;
-          for (int i = 0; i < list.num; i++) {
-            if (list.values[i].format ==
-                generated.mpv_format.MPV_FORMAT_NODE_MAP) {
-              String name = '', description = '';
-              final device = list.values[i].u.list.ref;
-              for (int j = 0; j < device.num; j++) {
-                if (device.values[j].format ==
-                    generated.mpv_format.MPV_FORMAT_STRING) {
-                  final property = device.keys[j].cast<Utf8>().toDartString();
-                  final value =
-                      device.values[j].u.string.cast<Utf8>().toDartString();
-                  switch (property) {
-                    case 'name':
-                      name = value;
-                      break;
-                    case 'description':
-                      description = value;
-                      break;
-                  }
-                }
-              }
-              audioDevices.add(AudioDevice(name, description));
-            }
-          }
-          state = state.copyWith(audioDevices: audioDevices);
-          if (!audioDevicesController.isClosed) {
-            audioDevicesController.add(audioDevices);
           }
         }
       }
@@ -1507,9 +1534,10 @@ class libmpvPlayer extends PlatformPlayer {
             value.ref.u.list.ref.values = calloc<generated.mpv_node>(
               headers.length,
             );
-            for (int i = 0; i < headers.entries.length; i++) {
-              final k = headers.entries.elementAt(i).key;
-              final v = headers.entries.elementAt(i).value;
+            final entries = headers.entries.toList();
+            for (int i = 0; i < entries.length; i++) {
+              final k = entries[i].key;
+              final v = entries[i].value;
               final data = '$k: $v'.toNativeUtf8();
               value.ref.u.list.ref.values[i].format =
                   generated.mpv_format.MPV_FORMAT_STRING;
@@ -1606,6 +1634,7 @@ class libmpvPlayer extends PlatformPlayer {
       // idle = yes
       // pause = yes
       // keep-open = yes
+      // network-timeout = 5
       // demuxer-max-bytes = 32 * 1024 * 1024
       // demuxer-max-back-bytes = 32 * 1024 * 1024
       //
@@ -1621,6 +1650,7 @@ class libmpvPlayer extends PlatformPlayer {
         'idle': 'yes',
         'pause': 'yes',
         'keep-open': 'yes',
+        'network-timeout': '5',
         'demuxer-max-bytes': (32 * 1024 * 1024).toString(),
         'demuxer-max-back-bytes': (32 * 1024 * 1024).toString(),
         // On Android, prefer OpenSL ES audio output.
@@ -1675,6 +1705,7 @@ class libmpvPlayer extends PlatformPlayer {
         'width': generated.mpv_format.MPV_FORMAT_INT64,
         'height': generated.mpv_format.MPV_FORMAT_INT64,
         'eof-reached': generated.mpv_format.MPV_FORMAT_FLAG,
+        'idle-active': generated.mpv_format.MPV_FORMAT_FLAG,
       }.forEach(
         (property, format) {
           final name = property.toNativeUtf8();
@@ -1719,8 +1750,6 @@ class libmpvPlayer extends PlatformPlayer {
       mpv.mpv_hook_add(ctx, 0, unload.cast(), 0);
       calloc.free(load);
       calloc.free(unload);
-
-      completer.complete();
     });
   }
 
@@ -1776,6 +1805,7 @@ class libmpvPlayer extends PlatformPlayer {
   /// While [isPlayingStateChangeAllowed] is `false`, any change to [state.playing] & [streams.playing] is ignored.
   bool isPlayingStateChangeAllowed = false;
 
+  /// [Completer] to wait for initialization of this instance (in [_create]).
   final Completer<void> completer = Completer<void>();
 
   /// [Future<void>] to wait for initialization of this instance.

@@ -1,3 +1,18 @@
+## 0.0.11
+
+- fix: `audioDevices` state/stream not being set/emit
+
+## 0.0.10+1
+
+- docs: update demo application links
+
+## 0.0.10
+
+- perf: emit distinct events in `Player.streams`
+- fix(android): crash on some devices
+- fix: `Player.setAudioDevice` not working
+- fix: set/emit `completed` as `false` upon `Player.seek`
+
 ## 0.0.9+1
 
 - docs: document updated `media_kit_video`
