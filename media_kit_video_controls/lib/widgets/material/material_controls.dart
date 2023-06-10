@@ -13,6 +13,7 @@ import 'package:media_kit_video_controls/widgets/models/option_item.dart';
 import 'package:media_kit_video_controls/widgets/models/subtitle_model.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/lib/src/models/player_state.dart';
+import 'package:media_kit/media_kit.dart';
 
 class MaterialControls extends StatefulWidget {
   const MaterialControls({
