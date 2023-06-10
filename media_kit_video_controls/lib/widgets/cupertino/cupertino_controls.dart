@@ -14,7 +14,7 @@ import 'package:media_kit_video_controls/widgets/models/subtitle_model.dart';
 import 'package:media_kit_video_controls/widgets/notifiers/index.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:media_kit/lib/src/models/player_state.dart';
 
 class CupertinoControls extends StatefulWidget {
   const CupertinoControls({
