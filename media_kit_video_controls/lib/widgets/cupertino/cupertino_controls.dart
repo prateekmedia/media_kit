@@ -1,3 +1,5 @@
+// ignore_for_file: implementation_imports
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -14,7 +16,7 @@ import 'package:media_kit_video_controls/widgets/models/subtitle_model.dart';
 import 'package:media_kit_video_controls/widgets/notifiers/index.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/lib/src/models/player_state.dart';
+import 'package:media_kit/src/models/player_state.dart';
 import 'package:media_kit/media_kit.dart';
 
 class CupertinoControls extends StatefulWidget {

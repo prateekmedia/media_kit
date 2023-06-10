@@ -1,3 +1,5 @@
+// ignore_for_file: implementation_imports
+
 import 'dart:async';
 
 import 'package:media_kit_video_controls/widgets/notifiers/player_notifier.dart';
@@ -12,7 +14,7 @@ import 'package:media_kit_video_controls/widgets/material/widgets/playback_speed
 import 'package:media_kit_video_controls/widgets/models/option_item.dart';
 import 'package:media_kit_video_controls/widgets/models/subtitle_model.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/lib/src/models/player_state.dart';
+import 'package:media_kit/src/models/player_state.dart';
 import 'package:media_kit/media_kit.dart';
 
 class MaterialControls extends StatefulWidget {
@@ -31,7 +33,7 @@ class MaterialControls extends StatefulWidget {
 
 class _MaterialControlsState extends State<MaterialControls>
     with SingleTickerProviderStateMixin {
-    PlayerNotifier? _notifier;
+  PlayerNotifier? _notifier;
 
   // We know that _notifier is set in didChangeDependencies
   PlayerNotifier get notifier => _notifier!;
@@ -58,7 +60,6 @@ class _MaterialControlsState extends State<MaterialControls>
 
   StreamSubscription? buffering;
   StreamSubscription? volume;
-
 
   @override
   Widget build(BuildContext context) {

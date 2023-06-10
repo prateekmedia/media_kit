@@ -2,12 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit_video_controls/widgets/widgets.dart';
-import 'package:media_kit/media_kit.dart';
 
 import 'package:wakelock/wakelock.dart';
 import 'package:window_manager/window_manager.dart';
@@ -335,8 +333,7 @@ class MediaKitController extends ChangeNotifier {
       Animation<double>,
       Animation<double>,
       MediaKitControllerProvider,
-    )?
-        routePageBuilder,
+    )? routePageBuilder,
   }) {
     return MediaKitController(
       player: player ?? this.player,
@@ -534,7 +531,7 @@ class MediaKitController extends ChangeNotifier {
 
   bool get isFullScreen => _isFullScreen;
 
-  bool _showingControls = false;
+  final bool _showingControls = false;
 
   bool get showingControls => _showingControls;
 

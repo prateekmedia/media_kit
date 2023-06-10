@@ -1,4 +1,3 @@
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit_video_controls/widgets/cupertino/cupertino_controls.dart';
 import 'package:media_kit_video_controls/widgets/material/material_controls.dart';

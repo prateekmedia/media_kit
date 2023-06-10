@@ -1,3 +1,5 @@
+// ignore_for_file: implementation_imports
+
 import 'dart:async';
 
 import 'package:media_kit/media_kit.dart';
@@ -13,6 +15,7 @@ import 'package:media_kit_video_controls/widgets/models/option_item.dart';
 import 'package:media_kit_video_controls/widgets/models/subtitle_model.dart';
 import 'package:media_kit_video_controls/widgets/notifiers/index.dart';
 import 'package:flutter/material.dart';
+import 'package:media_kit/src/models/player_state.dart';
 
 class MaterialDesktopControls extends StatefulWidget {
   const MaterialDesktopControls({
@@ -30,7 +33,6 @@ class MaterialDesktopControls extends StatefulWidget {
 
 class _MaterialDesktopControlsState extends State<MaterialDesktopControls>
     with SingleTickerProviderStateMixin {
-
   PlayerNotifier? _notifier;
 
   // We know that _notifier is set in didChangeDependencies
@@ -43,7 +45,7 @@ class _MaterialDesktopControlsState extends State<MaterialDesktopControls>
   late var _subtitlesPosition = Duration.zero;
   bool _subtitleOn = false;
   Timer? _showAfterExpandCollapseTimer;
-  bool _dragging = false;
+  final bool _dragging = false;
   bool _displayTapped = false;
   Timer? _bufferingDisplayTimer;
   bool _displayBufferingIndicator = false;

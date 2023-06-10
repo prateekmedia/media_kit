@@ -12,7 +12,6 @@ export 'package:media_kit/src/player/platform_player.dart';
 
 export 'package:media_kit/src/player/libmpv/player/player.dart';
 export 'package:media_kit/src/player/web/player/player.dart';
-export 'package:media_kit/src/models/player_state.dart';
 
 export 'package:media_kit/src/models/track.dart';
 export 'package:media_kit/src/models/playlist.dart';
